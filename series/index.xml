@@ -3,7 +3,7 @@
   <channel>
       <title>sedooe</title>
       <generator uri="https://hugo.spf13.com">Hugo</generator>
-    <link>http://sedooe.github.io/series/</link>
+    <link>/series/</link>
     <language>en-us</language>
     <author>Sedat Gokcen</author>
     
