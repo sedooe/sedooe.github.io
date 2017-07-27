@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+	<meta name="generator" content="Hugo 0.25.1" />
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <meta property="og:title" content="sedooe" />
+<meta property="og:description" content="" />
+
+<meta property="og:type" content="website" />
+
+<meta property="og:locale" content="en_US" />
+<meta property="og:url" content="http://sedooe.github.io/" />
+
+
+
+  <title> sedooe </title>
+
+  
+  <link href="http://sedooe.github.io/index.xml" rel="alternate" type="application/rss+xml" title="sedooe" />
+  <link href="http://sedooe.github.io/index.xml" rel="feed" type="application/rss+xml" title="sedooe" />
+  
+
+  
+  <link rel="stylesheet" href="http://sedooe.github.io/css/github.min.css">
+  <script src="http://sedooe.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  
+  <link rel="stylesheet" href="http://sedooe.github.io/css/poole.css">
+  <link rel="stylesheet" href="http://sedooe.github.io/css/syntax.css">
+  <link rel="stylesheet" href="http://sedooe.github.io/css/hyde.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://sedooe.github.io/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="http://sedooe.github.io/favicon.ico">
+
+  
+  <link href="http://sedooe.github.io/index.xml" rel="alternate" type="application/rss+xml" title="sedooe" />
+
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+
+  <link href='http://fonts.googleapis.com/css?family=Raleway:400,300' rel='stylesheet' type='text/css'>
+
+  <script src="//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js"></script>
+  <script>
+    WebFont.load({
+      google: {
+        families: ['Raleway']
+      }
+    });
+  </script>
+
+</head>
+
+<body>
+
+<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <h1 class="brand"><a href="http://sedooe.github.io">sedooe</a></h1>
+      <p class="lead">
+       mostly java stuff 
+      </p>
+    </div>
+
+    <div class="sidebar-photo">
+      <img class="img-circle" src="http://sedooe.github.io/img/sedatgokcen.png" width="160" height="160" />
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="http://sedooe.github.io/blog">Posts</a></li>
+      
+        <li><a href="http://sedooe.github.io/about/">About me </a></li>
+      
+      <br/>
+    </ul>
+      <a href="https://twitter.com/gokcensedat"><i class="fa fa-twitter-square"></i></a>&nbsp;&nbsp;
+      <a href="https://www.linkedin.com/in/sedatgokcen"><i class="fa fa-linkedin-square"></i></a>&nbsp;&nbsp;
+      
+      <a href="https://github.com/sedooe"><i class="fa fa-github-square"></i></a>&nbsp;&nbsp;
+      
+
+    <p class="footnote">powered by <a href="http://hugo.spf13.com">Hugo</a> <br/>
+    &copy; 2017 Sedat Gokcen</p>
+
+  </div>
+</div>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-242317-14']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' :
+        'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+
+</script>
+
+
+    <div class="content container">
+<div class="posts">
+
+      
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://sedooe.github.io/2017/04/intercepting-and-modifying-logs-in-logback/">
+        Intercepting and modifying logs in Logback
+      </a>
+    </h1>
+
+    <span class="post-date">Apr 17, 2017</span>
+
+    
+
+
+    <p>Actually, Logback does not offer a direct way to modify logs but there is a workaround we can achieve our goal by using filter even though it looks like a bit hacky.</p>
+
+<p>Let&rsquo;s say that you logged some id no of some user hundreds of times, it scattered through all over the application and now you have a new requirement that says you have to encrypt this id number. Of course you&rsquo;re smart enough to write an interceptor for this task instead of go find and change necessary logs manually. And also with this way, we can be sure that we&rsquo;ll never log that id number accidentally.</p>
+
+<p>For this case, we&rsquo;re gonna extend <a href="https://logback.qos.ch/apidocs/ch/qos/logback/classic/turbo/TurboFilter.html"><code>TurboFilter</code></a> and override its <code>decide</code> method.</p>
+
+<script src="https://gist.github.com/sedooe/a1658c2fb7ae89084b2f21457321f0e2.js"></script>
+
+<p>If the log matches our criteria and we want to change it, we deny it by returning <code>FilterReply.DENY</code> and log again with the changed object.</p>
+
+<p>Here, I used <code>info</code> as log level for the sake of simplicity but if you don&rsquo;t want to change log level, you can easily check which <code>level</code> coming log has and use that level.</p>
+
+<p>It&rsquo;s that easy once you deal with recursion and not forget to declare your custom filter in configuration file properly.</p>
+
+<script src="https://gist.github.com/sedooe/97f93f124dae080c9d958d1689c1697e.js"></script>
+
+  </div>
+  
+  
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://sedooe.github.io/2016/08/cors-and-authentication/">
+        CORS and Authentication
+      </a>
+    </h1>
+
+    <span class="post-date">Aug 28, 2016</span>
+
+    
+
+
+    <p>Let&rsquo;s say that you have an API which stands on <strong>xdomain.com</strong> and you have a Javascript application that consuming this API from <strong>ydomain.com</strong>. For ydomain.com to consume the API, xdomain.com has to send <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS">CORS</a> header  <code>Access-Control-Allow-Origin</code> in its response.</p>
+
+<p>The simplest way to do this in Spring is annotate whole controller or just handler method with the annotation <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/CrossOrigin.html"><code>CrossOrigin</code></a>.</p>
+
+<p>It&rsquo;s all what you need when your API does not require authentication.</p>
+
+<p>On the other hand, when your API requires authentication, things get a bit complicated. For example, let&rsquo;s say that you authenticate your API with HTTP Basic Authentication. So, consumers of this API must send an <strong>Authorization</strong> header which contains user credentials in their request. Since this is a <a href="http://stackoverflow.com/a/10636765/3099704">non-simple request</a>, <strong>OPTIONS</strong> request will be send firstly. The thing is that, even if you send Authorization header with correct credentials in your request, you will face something like below:</p>
+
+<p><img src="http://www.sedooe.com/img/options_response.png" alt="response" /></p>
+
+<p>The reason of this is, according to CORS spec, it excludes your Authorization header. Hence, you should permit OPTIONS requests in your security configuration class explicitly.</p>
+
+<script src="https://gist.github.com/sedooe/5c5735ca41a96a6d7be7a73d783334ba.js"></script>
+
+<p>Last of all, I suggest you to read these two posts:</p>
+
+<p><a href="http://stackoverflow.com/a/15734032/3099704">http://stackoverflow.com/a/15734032/3099704</a>
+<a href="https://code.google.com/archive/p/twitter-api/issues/2273">https://code.google.com/archive/p/twitter-api/issues/2273</a></p>
+
+  </div>
+  
+  
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://sedooe.github.io/2016/04/rest-authentication-using-spring-security-and-spring-session/">
+        REST Authentication using Spring Security &amp; Spring Session
+      </a>
+    </h1>
+
+    <span class="post-date">Apr 16, 2016</span>
+
+    
+
+
+    <p>In this post, I will try to demonstrate how easily we can implement an authentication mechanism for REST services using Spring Security and Spring Session with the help of Redis.</p>
+
+<p>The authentication scheme that we will use:</p>
+
+<ol>
+<li>Client requests an authenticated URL with its credentials. (first request to the server)</li>
+<li>Server gives some unique string besides the normal response. </br>(unique string is session id in our case)</li>
+<li>Client has to send this string with every request using an HTTP header.</li>
+<li>Server recognizes this unique string and logs client in.</li>
+</ol>
+
+<p><strong>Let&rsquo;s start implementing the scheme above.</strong></p>
+
+<blockquote>
+<p>For this application to work, you must install Redis 2.8+ on localhost and run it with the default port (6379).</p>
+</blockquote>
+
+<p>We will create very simple Spring Boot application which you can get source code and dependencies <a href="https://github.com/sedooe/blog-projects/tree/master/rest-authentication-example">here</a>.</p>
+
+<p>Our security configuration looks like:
+<script src="https://gist.github.com/sedooe/f143f6b615bfc1aeb23954ef514ec244.js"></script></p>
+
+<p><code>configureGlobal</code> method is pretty straightforward, we just create a user with username <em>sedooe</em> and password <em>password</em>.</p>
+
+<p><code>configure</code> method is also straightforward but I want to emphasize two things here.</p>
+
+<ol>
+<li><p>We are using HTTP Basic Authentication since it is simplest way to deal with authentication. As you probably know, Basic Authentication is just a standard HTTP header with the username:password encoded in base64: </br>
+<code>Authorization: Basic c2Vkb29lOnBhc3N3b3Jk</code> </br>
+Keep in mind that encoding is not encrypting. Therefore, you must use HTTPS instead of HTTP to make sure that user credentials are sent securely.</p></li>
+
+<li><p><code>NullRequestCache</code> prevents creation of session when user is not authenticated so that we have only authenticated users&rsquo; session ids stored in Redis.</p></li>
+</ol>
+
+<p>In <code>httpSessionStrategy</code> method, Spring Session comes into play. </br>
+Thanks to <code>HeaderHttpSessionStrategy</code>, when a session is created, the HTTP response will have a response header of the specified name and the value of the session id. Default header name is <strong>x-auth-token</strong> and we will use it.</p>
+
+<p>Here is our simple controller:
+<script src="https://gist.github.com/sedooe/0f1536cfccb3024b1090fb73b895f718.js"></script></p>
+
+<p>There is nothing to mention about this controller specifically so let&rsquo;s start trying things out.</p>
+
+<p><code>$ curl -v http://localhost:8080/api/resource</code></p>
+
+<p>Yeah, authentication is required to access this resource. So try:</br>
+<code>$ curl -v http://localhost:8080/api/resource -u sedooe:password</code></p>
+
+<p>Now you are authenticated and you have access to the resource. Take a look at response headers and you will see that:</br>
+<code>x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040</code></p>
+
+<p>For further requests, we can use <strong>x-auth-token</strong> instead of username and password.</br>
+<code>$ curl -v http://localhost:8080/api/resource -H &quot;x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040&quot;</code></p>
+
+<p>If you want to see all stored tokens:</br>
+<code>$ redis-cli keys '*'</code></p>
+
+<p>To invalidate the session and delete it from Redis:</br>
+<code>$ curl -v http://localhost:8080/api/logout -H &quot;x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040&quot;</code></p>
+
+<blockquote>
+<p><strong>Note:</strong></p>
+
+<p>You may wonder how our application connected to Redis without writing any code for that.</p>
+
+<p>Since we use Spring Boot 1.3.3 in this project and Spring Session and Spring Data Redis are both on the classpath, Spring Boot will auto-configure Spring Session to connect to Redis.</p>
+
+<p>If you use earlier Spring Boot versions than 1.3.1 or don&rsquo;t use it at all, you should add <a href="http://docs.spring.io/spring-session/docs/current/api/org/springframework/session/data/redis/config/annotation/web/http/EnableRedisHttpSession.html"><code>@EnableRedisHttpSession</code></a> to your configuration class.</p>
+</blockquote>
+
+  </div>
+  
+  
+  
+  
+</div>
+
+  </body>
+</html>

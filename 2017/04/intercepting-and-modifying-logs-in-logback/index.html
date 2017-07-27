@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <meta property="og:title" content="Intercepting and modifying logs in Logback" />
+<meta property="og:description" content="" />
+
+<meta property="og:type" content="article" />
+
+<meta property="og:locale" content="en_US" />
+<meta property="og:url" content="http://sedooe.github.io/2017/04/intercepting-and-modifying-logs-in-logback/" />
+
+
+
+  <title> Intercepting and modifying logs in Logback  &middot; sedooe </title>
+
+  
+
+  
+  <link rel="stylesheet" href="http://sedooe.github.io/css/github.min.css">
+  <script src="http://sedooe.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  
+  <link rel="stylesheet" href="http://sedooe.github.io/css/poole.css">
+  <link rel="stylesheet" href="http://sedooe.github.io/css/syntax.css">
+  <link rel="stylesheet" href="http://sedooe.github.io/css/hyde.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://sedooe.github.io/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="http://sedooe.github.io/favicon.ico">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="sedooe" />
+
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+
+  <link href='http://fonts.googleapis.com/css?family=Raleway:400,300' rel='stylesheet' type='text/css'>
+
+  <script src="//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js"></script>
+  <script>
+    WebFont.load({
+      google: {
+        families: ['Raleway']
+      }
+    });
+  </script>
+
+</head>
+
+<body>
+
+  <div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <h1 class="brand"><a href="http://sedooe.github.io">sedooe</a></h1>
+      <p class="lead">
+       mostly java stuff 
+      </p>
+    </div>
+
+    <div class="sidebar-photo">
+      <img class="img-circle" src="http://sedooe.github.io/img/sedatgokcen.png" width="160" height="160" />
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="http://sedooe.github.io/blog">Posts</a></li>
+      
+        <li><a href="http://sedooe.github.io/about/">About me </a></li>
+      
+      <br/>
+    </ul>
+      <a href="https://twitter.com/gokcensedat"><i class="fa fa-twitter-square"></i></a>&nbsp;&nbsp;
+      <a href="https://www.linkedin.com/in/sedatgokcen"><i class="fa fa-linkedin-square"></i></a>&nbsp;&nbsp;
+      
+      <a href="https://github.com/sedooe"><i class="fa fa-github-square"></i></a>&nbsp;&nbsp;
+      
+
+    <p class="footnote">powered by <a href="http://hugo.spf13.com">Hugo</a> <br/>
+    &copy; 2017 Sedat Gokcen</p>
+
+  </div>
+</div>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-242317-14']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script');
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' :
+        'http://www') + '.google-analytics.com/ga.js';
+    ga.setAttribute('async', 'true');
+    document.documentElement.firstChild.appendChild(ga);
+  })();
+
+</script>
+
+
+  <div class="content container">
+    <div class="post">
+    <h1 class="post-title">Intercepting and modifying logs in Logback</h1>
+    <span class="post-date">Apr 17, 2017</span>
+    
+    <p>Actually, Logback does not offer a direct way to modify logs but there is a workaround we can achieve our goal by using filter even though it looks like a bit hacky.</p>
+
+<p>Let&rsquo;s say that you logged some id no of some user hundreds of times, it scattered through all over the application and now you have a new requirement that says you have to encrypt this id number. Of course you&rsquo;re smart enough to write an interceptor for this task instead of go find and change necessary logs manually. And also with this way, we can be sure that we&rsquo;ll never log that id number accidentally.</p>
+
+<p>For this case, we&rsquo;re gonna extend <a href="https://logback.qos.ch/apidocs/ch/qos/logback/classic/turbo/TurboFilter.html"><code>TurboFilter</code></a> and override its <code>decide</code> method.</p>
+
+<script src="https://gist.github.com/sedooe/a1658c2fb7ae89084b2f21457321f0e2.js"></script>
+
+<p>If the log matches our criteria and we want to change it, we deny it by returning <code>FilterReply.DENY</code> and log again with the changed object.</p>
+
+<p>Here, I used <code>info</code> as log level for the sake of simplicity but if you don&rsquo;t want to change log level, you can easily check which <code>level</code> coming log has and use that level.</p>
+
+<p>It&rsquo;s that easy once you deal with recursion and not forget to declare your custom filter in configuration file properly.</p>
+
+<script src="https://gist.github.com/sedooe/97f93f124dae080c9d958d1689c1697e.js"></script>
+
+
+
+    
+
+    
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+    
+    
+    if (window.location.hostname == "localhost")
+        return;
+
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    var disqus_shortname = 'sedooe';
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the comments powered by <a href="http://disqus.com/?ref_noscript">Disqus.</a></noscript>
+
+</div>
+</div>
+
+</body>
+</html>

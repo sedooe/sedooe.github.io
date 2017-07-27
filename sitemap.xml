@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>http://sedooe.github.io/2017/04/intercepting-and-modifying-logs-in-logback/</loc>
+    <lastmod>2017-04-17T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://sedooe.github.io/2016/08/cors-and-authentication/</loc>
+    <lastmod>2016-08-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://sedooe.github.io/2016/04/rest-authentication-using-spring-security-and-spring-session/</loc>
+    <lastmod>2016-04-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://sedooe.github.io/about/</loc>
+  </url>
+  
+  <url>
+    <loc>http://sedooe.github.io/blog/</loc>
+    <lastmod>2017-04-17T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://sedooe.github.io/series/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://sedooe.github.io/series-desc/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://sedooe.github.io/tags/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>http://sedooe.github.io/</loc>
+    <lastmod>2017-04-17T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+</urlset>
