@@ -12,10 +12,10 @@
     
     <item>
       <title>Tracing Requests &amp; Responses with Spring Boot Actuator</title>
-      <link>https://sedooe.github.io/2017/08/deneme/</link>
+      <link>https://sedooe.github.io/2017/08/tracing-requests-and-responses-with-spring-boot-actuator/</link>
       <pubDate>Sat, 19 Aug 2017 00:00:00 UTC</pubDate>
       <author>Sedat Gokcen</author>
-      <guid>https://sedooe.github.io/2017/08/deneme/</guid>
+      <guid>https://sedooe.github.io/2017/08/tracing-requests-and-responses-with-spring-boot-actuator/</guid>
       <description>&lt;p&gt;Spring Boot Actuator is a sub-project that provides endpoints allow you to monitor and interact with your application. You can take a look at &lt;a href=&#34;https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-endpoints.html#production-ready-endpoints&#34;&gt;complete list of endpoints&lt;/a&gt; but we will focus on &lt;code&gt;trace&lt;/code&gt; and its customization in this post.&lt;/p&gt;
 
 &lt;p&gt;By default, &lt;code&gt;trace&lt;/code&gt; endpoint is enabled for all HTTP requests and shows last 100 of them with 5 default properties:&lt;/p&gt;
