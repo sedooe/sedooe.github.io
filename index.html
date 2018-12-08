@@ -233,7 +233,7 @@ By annotating this class with <code>@Component</code>, we tell Spring to registe
 
 <p>On the other hand, when your API requires authentication, things get a bit complicated. For example, let&rsquo;s say that you authenticate your API with HTTP Basic Authentication. So, consumers of this API must send an <strong>Authorization</strong> header which contains user credentials in their request. Since this is a <a href="http://stackoverflow.com/a/10636765/3099704">non-simple request</a>, <strong>OPTIONS</strong> request will be send firstly. The thing is that, even if you send Authorization header with correct credentials in your request, you will face something like below:</p>
 
-<p><img src="http://www.sedooe.com/img/options_response.png" alt="response" /></p>
+<p><img src="https://www.sedooe.com/img/options_response.png" alt="response" /></p>
 
 <p>The reason of this is, according to CORS spec, it excludes your Authorization header. Hence, you should permit OPTIONS requests in your security configuration class explicitly.</p>
 

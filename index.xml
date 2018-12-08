@@ -107,7 +107,7 @@ By annotating this class with &lt;code&gt;@Component&lt;/code&gt;, we tell Sprin
 
 &lt;p&gt;On the other hand, when your API requires authentication, things get a bit complicated. For example, let&amp;rsquo;s say that you authenticate your API with HTTP Basic Authentication. So, consumers of this API must send an &lt;strong&gt;Authorization&lt;/strong&gt; header which contains user credentials in their request. Since this is a &lt;a href=&#34;http://stackoverflow.com/a/10636765/3099704&#34;&gt;non-simple request&lt;/a&gt;, &lt;strong&gt;OPTIONS&lt;/strong&gt; request will be send firstly. The thing is that, even if you send Authorization header with correct credentials in your request, you will face something like below:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://www.sedooe.com/img/options_response.png&#34; alt=&#34;response&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://www.sedooe.com/img/options_response.png&#34; alt=&#34;response&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;The reason of this is, according to CORS spec, it excludes your Authorization header. Hence, you should permit OPTIONS requests in your security configuration class explicitly.&lt;/p&gt;
 
