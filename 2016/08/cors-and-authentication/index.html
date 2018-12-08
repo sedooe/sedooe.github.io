@@ -13,7 +13,7 @@
 <meta property="og:type" content="article" />
 
 <meta property="og:locale" content="en_US" />
-<meta property="og:url" content="https://sedooe.com/2016/08/cors-and-authentication/" />
+<meta property="og:url" content="https://sedooe.github.io/2016/08/cors-and-authentication/" />
 
 
   <meta name="twitter:card" content="summary"/>
@@ -28,19 +28,19 @@ It&rsquo;s all what you need when your API does not require authentication."/>
   
 
   
-  <link rel="stylesheet" href="https://sedooe.com/css/github.min.css">
-  <script src="https://sedooe.com/js/highlight.pack.js"></script>
+  <link rel="stylesheet" href="https://sedooe.github.io/css/github.min.css">
+  <script src="https://sedooe.github.io/js/highlight.pack.js"></script>
   <script>hljs.initHighlightingOnLoad();</script>
 
   
-  <link rel="stylesheet" href="https://sedooe.com/css/poole.css">
-  <link rel="stylesheet" href="https://sedooe.com/css/syntax.css">
-  <link rel="stylesheet" href="https://sedooe.com/css/hyde.css">
+  <link rel="stylesheet" href="https://sedooe.github.io/css/poole.css">
+  <link rel="stylesheet" href="https://sedooe.github.io/css/syntax.css">
+  <link rel="stylesheet" href="https://sedooe.github.io/css/hyde.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
   
-  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://sedooe.com/apple-touch-icon-144-precomposed.png">
-  <link rel="shortcut icon" href="https://sedooe.com/favicon.ico">
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://sedooe.github.io/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="https://sedooe.github.io/favicon.ico">
 
   
   <link href="" rel="alternate" type="application/rss+xml" title="sedooe" />
@@ -65,20 +65,20 @@ It&rsquo;s all what you need when your API does not require authentication."/>
   <div class="sidebar">
   <div class="container sidebar-sticky">
     <div class="sidebar-about">
-      <h1 class="brand"><a href="https://sedooe.com">sedooe</a></h1>
+      <h1 class="brand"><a href="https://sedooe.github.io">sedooe</a></h1>
       <p class="lead">
        mostly java stuff 
       </p>
     </div>
 
     <div class="sidebar-photo">
-      <img class="img-circle" src="https://sedooe.com/img/sedatgokcen.png" width="160" height="160" />
+      <img class="img-circle" src="https://sedooe.github.io/img/sedatgokcen.png" width="160" height="160" />
     </div>
 
     <ul class="sidebar-nav">
-      <li><a href="https://sedooe.com/blog">Posts</a></li>
+      <li><a href="https://sedooe.github.io/blog">Posts</a></li>
       
-        <li><a href="https://sedooe.com/about/">About me </a></li>
+        <li><a href="https://sedooe.github.io/about/">About me </a></li>
       
       <br/>
     </ul>
@@ -124,7 +124,7 @@ It&rsquo;s all what you need when your API does not require authentication."/>
 
 <p>On the other hand, when your API requires authentication, things get a bit complicated. For example, let&rsquo;s say that you authenticate your API with HTTP Basic Authentication. So, consumers of this API must send an <strong>Authorization</strong> header which contains user credentials in their request. Since this is a <a href="http://stackoverflow.com/a/10636765/3099704">non-simple request</a>, <strong>OPTIONS</strong> request will be send firstly. The thing is that, even if you send Authorization header with correct credentials in your request, you will face something like below:</p>
 
-<p><img src="https://www.sedooe.com/img/options_response.png" alt="response" /></p>
+<p><img src="https://sedooe.github.io/img/options_response.png" alt="response" /></p>
 
 <p>The reason of this is, according to CORS spec, it excludes your Authorization header. Hence, you should permit OPTIONS requests in your security configuration class explicitly.</p>
 

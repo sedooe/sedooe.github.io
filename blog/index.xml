@@ -2,21 +2,21 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Blogs on sedooe</title>
-    <link>https://sedooe.com/blog/</link>
+    <link>https://sedooe.github.io/blog/</link>
     <description>Recent content in Blogs on sedooe</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <lastBuildDate>Sat, 19 Aug 2017 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="https://sedooe.com/blog/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://sedooe.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Tracing Requests &amp; Responses with Spring Boot Actuator</title>
-      <link>https://sedooe.com/2017/08/tracing-requests-and-responses-with-spring-boot-actuator/</link>
+      <link>https://sedooe.github.io/2017/08/tracing-requests-and-responses-with-spring-boot-actuator/</link>
       <pubDate>Sat, 19 Aug 2017 00:00:00 +0000</pubDate>
       
-      <guid>https://sedooe.com/2017/08/tracing-requests-and-responses-with-spring-boot-actuator/</guid>
+      <guid>https://sedooe.github.io/2017/08/tracing-requests-and-responses-with-spring-boot-actuator/</guid>
       <description>Spring Boot Actuator is a sub-project that provides endpoints allow you to monitor and interact with your application. You can take a look at complete list of endpoints but we will focus on trace and its customization in this post.
 By default, trace endpoint is enabled for all HTTP requests and shows last 100 of them with 5 default properties:
  Request Headers Response Headers Cookies Errors Time Taken  So, when you hit /trace, the typical response will be like:</description>
@@ -24,20 +24,20 @@ By default, trace endpoint is enabled for all HTTP requests and shows last 100 o
     
     <item>
       <title>Intercepting and modifying logs in Logback</title>
-      <link>https://sedooe.com/2017/04/intercepting-and-modifying-logs-in-logback/</link>
+      <link>https://sedooe.github.io/2017/04/intercepting-and-modifying-logs-in-logback/</link>
       <pubDate>Mon, 17 Apr 2017 00:00:00 +0000</pubDate>
       
-      <guid>https://sedooe.com/2017/04/intercepting-and-modifying-logs-in-logback/</guid>
+      <guid>https://sedooe.github.io/2017/04/intercepting-and-modifying-logs-in-logback/</guid>
       <description>Actually, Logback does not offer a direct way to modify logs but there is a workaround we can achieve our goal by using filter even though it looks like a bit hacky.
 Let&amp;rsquo;s say that you logged some id no of some user hundreds of times, it scattered through all over the application and now you have a new requirement that says you have to encrypt this id number. Of course you&amp;rsquo;re smart enough to write an interceptor for this task instead of go find and change necessary logs manually.</description>
     </item>
     
     <item>
       <title>CORS and Authentication</title>
-      <link>https://sedooe.com/2016/08/cors-and-authentication/</link>
+      <link>https://sedooe.github.io/2016/08/cors-and-authentication/</link>
       <pubDate>Sun, 28 Aug 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://sedooe.com/2016/08/cors-and-authentication/</guid>
+      <guid>https://sedooe.github.io/2016/08/cors-and-authentication/</guid>
       <description>Let&amp;rsquo;s say that you have an API which stands on xdomain.com and you have a Javascript application that consuming this API from ydomain.com. For ydomain.com to consume the API, xdomain.com has to send CORS header Access-Control-Allow-Origin in its response.
 The simplest way to do this in Spring is annotate whole controller or just handler method with the annotation CrossOrigin.
 It&amp;rsquo;s all what you need when your API does not require authentication.</description>
@@ -45,10 +45,10 @@ It&amp;rsquo;s all what you need when your API does not require authentication.<
     
     <item>
       <title>REST Authentication using Spring Security &amp; Spring Session</title>
-      <link>https://sedooe.com/2016/04/rest-authentication-using-spring-security-and-spring-session/</link>
+      <link>https://sedooe.github.io/2016/04/rest-authentication-using-spring-security-and-spring-session/</link>
       <pubDate>Sat, 16 Apr 2016 00:00:00 +0000</pubDate>
       
-      <guid>https://sedooe.com/2016/04/rest-authentication-using-spring-security-and-spring-session/</guid>
+      <guid>https://sedooe.github.io/2016/04/rest-authentication-using-spring-security-and-spring-session/</guid>
       <description>In this post, I will try to demonstrate how easily we can implement an authentication mechanism for REST services using Spring Security and Spring Session with the help of Redis.
 The authentication scheme that we will use:
  Client requests an authenticated URL with its credentials. (first request to the server) Server gives some unique string besides the normal response. (unique string is session id in our case) Client has to send this string with every request using an HTTP header.</description>
