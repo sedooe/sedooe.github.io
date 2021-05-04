@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Blogs on sedooe</title>
@@ -6,10 +6,17 @@
     <description>Recent content in Blogs on sedooe</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 19 Aug 2017 00:00:00 +0000</lastBuildDate>
-    
-	<atom:link href="https://sedooe.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
-    
+    <lastBuildDate>Tue, 04 May 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://sedooe.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Caveats for using Spring JMS with Amazon SQS</title>
+      <link>https://sedooe.github.io/2021/05/caveats-for-using-spring-jms-with-amazon-sqs/</link>
+      <pubDate>Tue, 04 May 2021 00:00:00 +0000</pubDate>
+      
+      <guid>https://sedooe.github.io/2021/05/caveats-for-using-spring-jms-with-amazon-sqs/</guid>
+      <description>In this blog post, I&amp;rsquo;ll try to explain what you need to be careful about when using Spring JMS for consuming messages from Amazon SQS.
+Even though there are many blog posts for using Spring JMS with Amazon SQS, I noticed that most of them don&amp;rsquo;t even mention how to handle failures properly.
+I&amp;rsquo;m not sure if it&amp;rsquo;s because blog posts are poor-quality, or the consumers of them are just very lazy that they&amp;rsquo;re trying to build production systems based on random blog posts with zero questionings.</description>
+    </item>
     
     <item>
       <title>Tracing Requests &amp; Responses with Spring Boot Actuator</title>

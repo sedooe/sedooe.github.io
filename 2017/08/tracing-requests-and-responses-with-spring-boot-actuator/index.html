@@ -108,9 +108,7 @@ if (!doNotTrack) {
     <span class="post-date">Aug 19, 2017</span>
     
     <p>Spring Boot Actuator is a sub-project that provides endpoints allow you to monitor and interact with your application. You can take a look at <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-endpoints.html#production-ready-endpoints">complete list of endpoints</a> but we will focus on <code>trace</code> and its customization in this post.</p>
-
 <p>By default, <code>trace</code> endpoint is enabled for all HTTP requests and shows last 100 of them with 5 default properties:</p>
-
 <ul>
 <li>Request Headers</li>
 <li>Response Headers</li>
@@ -118,40 +116,24 @@ if (!doNotTrack) {
 <li>Errors</li>
 <li>Time Taken</li>
 </ul>
-
 <p>So, when you hit <code>/trace</code>, the typical response will be like:</p>
-
-<script src="https://gist.github.com/sedooe/6ed35760c8a1388a39bc95ac1cbc2f88.js"></script>
-
+<!-- raw HTML omitted -->
 <p>The question is: how can we customize these properties? Is there any way to exclude some of them or include even more properties? The answer is YES.</p>
-
 <p><a href="https://github.com/spring-projects/spring-boot/blob/dd08c31b9a5c21da31ecc4e9408e33445dd2ea73/spring-boot-actuator/src/main/java/org/springframework/boot/actuate/trace/TraceProperties.java#L67">Here</a>, you can see all available properties. Sometimes, the best documentation is the source code :).</p>
-
 <p>In your configuration file you can specify the properties you want to trace:</p>
-
 <p><code>management.trace.include = remote_address, parameters</code></p>
-
 <blockquote>
 <p>Note that this will override default properties. If you want to keep them, you have to specify them along with additional properties you want.</p>
 </blockquote>
-
 <p>In the introduction part we said that it&rsquo;s enabled for all HTTP requests. It really is. If you played with it, probably you saw that requests made to <code>/trace</code> also traced. Let&rsquo;s say you don&rsquo;t want some endpoints to be traced such as <code>/admin/**</code>, <code>/trace</code> and endpoints provide static files like <code>/css/**</code> and <code>/js/**</code>.</p>
-
 <p>To be able to prevent those endpoints to be traced, we need to extend <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/WebRequestTraceFilter.html"><code>WebRequestTraceFilter</code></a> and override its <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/filter/OncePerRequestFilter.html#shouldNotFilter-javax.servlet.http.HttpServletRequest-"><code>shouldNotFilter</code></a> method which inherited from <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/filter/OncePerRequestFilter.html"><code>OncePerRequestFilter</code></a>.</p>
-
-<script src="https://gist.github.com/sedooe/f3e4ec1dd49bb316a5a3f94425d267f7.js"></script>
-
+<!-- raw HTML omitted -->
 <p><code>shouldNotFilter</code>&rsquo;s default implementation was always returning false. Now with this implementation, it returns <strong>true</strong> for the endpoints we don&rsquo;t want to trace.
 By annotating this class with <code>@Component</code>, we tell Spring to register it as a bean instead inherited <code>WebRequestTraceFilter</code>. No more configuration needed for this to work.</p>
-
 <p>It&rsquo;s not over yet, we need more customization!</p>
-
 <p>In the introduction part we also said that, <code>trace</code> endpoint shows last 100 requests by default. Unfortunately, there is no way to change it from configuration file directly but still it&rsquo;s a piece of cake.</p>
-
-<script src="https://gist.github.com/sedooe/0310f74811c6d811382c27d4d76fc2b1.js"></script>
-
+<!-- raw HTML omitted -->
 <p>By default, <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/InMemoryTraceRepository.html"><code>InMemoryTraceRepository</code></a> is used as an implementation of <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/TraceRepository.html"><code>TraceRepository</code></a>. By extending it, we can expand the capacity, log requests explicitly or even persist them. It&rsquo;s up to you.</p>
-
 <p><a href="https://github.com/sedooe/blog-projects/tree/master/spring-boot-actuator-customization">Here</a> is the source code of sample application.</p>
 
 
