@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <meta property="og:title" content="Using Spring JMS with Amazon SQS" />
+<meta property="og:description" content="" />
+
+<meta property="og:type" content="article" />
+
+<meta property="og:locale" content="en_US" />
+<meta property="og:url" content="https://sedooe.github.io/2021/05/using-spring-jms-with-amazon-sqs/" />
+
+
+  <meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Using Spring JMS with Amazon SQS"/>
+<meta name="twitter:description" content="In this blog post, I&rsquo;ll try to explain what you need to be careful about when using Spring JMS for consuming messages from Amazon SQS.
+Even though there are many blog posts about this topic, I noticed that most of them don&rsquo;t even mention how to handle failures properly.
+I&rsquo;m not sure if it&rsquo;s because blog posts are poor-quality, or the consumers of them are just very lazy that they&rsquo;re trying to build production systems based on random blog posts with zero questionings."/>
+
+  
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-131084860-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+  <title> Using Spring JMS with Amazon SQS  &middot; sedooe </title>
+
+  
+
+  
+  <link rel="stylesheet" href="https://sedooe.github.io/css/github.min.css">
+  <script src="https://sedooe.github.io/js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  
+  <link rel="stylesheet" href="https://sedooe.github.io/css/poole.css">
+  <link rel="stylesheet" href="https://sedooe.github.io/css/syntax.css">
+  <link rel="stylesheet" href="https://sedooe.github.io/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://sedooe.github.io/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="https://sedooe.github.io/favicon.ico">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="sedooe" />
+
+  <link href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+
+  <link href='https://fonts.googleapis.com/css?family=Raleway:400,300' rel='stylesheet' type='text/css'>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js"></script>
+  <script>
+    WebFont.load({
+      google: {
+        families: ['Raleway']
+      }
+    });
+  </script>
+
+</head>
+
+<body>
+
+  <div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <h1 class="brand"><a href="https://sedooe.github.io">sedooe</a></h1>
+      <p class="lead">
+       jvm, spring, kubernetes 
+      </p>
+    </div>
+
+    <div class="sidebar-photo">
+      <img class="img-circle" src="https://sedooe.github.io/img/sedatgokcen.png" width="160" height="160" />
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="https://sedooe.github.io/blog">Posts</a></li>
+      
+        <li><a href="https://sedooe.github.io/about/">About me </a></li>
+      
+      <br/>
+    </ul>
+      <a href="https://twitter.com/gokcensedat"><i class="fa fa-twitter-square"></i></a>&nbsp;&nbsp;
+      <a href="https://www.linkedin.com/in/sedatgokcen"><i class="fa fa-linkedin-square"></i></a>&nbsp;&nbsp;
+      <a href="https://stackoverflow.com/users/3099704/sedooe"><i class="fa fa-stack-overflow"></i></a>&nbsp;&nbsp;
+      <a href="https://github.com/sedooe"><i class="fa fa-github-square"></i></a>&nbsp;&nbsp;
+  </div>
+</div>
+
+
+  <div class="content container">
+    <div class="post">
+    <h1 class="post-title">Using Spring JMS with Amazon SQS</h1>
+    <span class="post-date">May 4, 2021</span>
+    
+    <p>In this blog post, I&rsquo;ll try to explain what you need to be careful about when using Spring JMS for consuming messages from <a href="https://aws.amazon.com/sqs/">Amazon SQS</a>.</p>
+<p>Even though there are many blog posts about this topic, I noticed that most of them don&rsquo;t even mention how to handle failures properly.</p>
+<p>I&rsquo;m not sure if it&rsquo;s because blog posts are poor-quality, or the consumers of them are just very lazy that they&rsquo;re trying to build production systems based on random blog posts with zero questionings. Anyway&hellip;</p>
+<p>Alright. So, you have an SQS queue that you want to consume and process messages. This message processing might involve some external systems so you should be prepared for failures during this message processing. SQS provides some nice features for you to handle these failures.</p>
+<p><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"><strong>Visibility Timeout</strong></a>: SQS has out-of-the-box support for retries with fixed delays. If you don&rsquo;t delete the message you consumed within this period, that message will be visible again to the consumers. Hence, retry mechanism with a fixed delay. You can configure the maximum number of retries with <a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html">Redrive Policy</a>.<br>
+What happens if you still can&rsquo;t process message successfully and can&rsquo;t delete the message from the queue after all these retries?</p>
+<p><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"><strong>Dead-letter Queues</strong></a>: The messages that you couldn&rsquo;t process within <code>(maxReceiveCount * visibilityTimeout)</code> seconds, will be sent to its dead-letter queue automatically by SQS, so that you can later on examine these messages you could not process and try to find out the root cause for the failures.</p>
+<p>&ldquo;Great!&rdquo; you think, SQS already does a lot of stuff for handling failures, you just need to integrate Spring JMS with Amazon SQS, and then you can start writing message processing logic.</p>
+<p>So you found <a href="https://aws.amazon.com/blogs/developer/using-amazon-sqs-with-spring-boot-and-spring-jms/">this</a> blog post for this integration and realize that SQS even has its own <a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib">JMS library</a> which you can integrate with Spring JMS, nice!</p>
+<p>When you apply the very same config in the blog post above, if you have an error and your JMS Listener throws an exception during message processing, you&rsquo;ll see that visibility timeout is not respected at all, and retry kicks in immediately. In <a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/issues/75">this GitHub issue</a>, you can find why that&rsquo;s happening.</p>
+<p>Basically, when you use <code>CLIENT_ACKNOWLEDGE</code> mode, if your listener method throws an exception, SQS JMS library changes that message&rsquo;s visibility timeout to 0, so that message becomes visible immediately. This is not what we want, we all know that immediate retries often trouble rather than a cure for any problem.</p>
+<p>It&rsquo;s clear that we need to choose another acknowledge mode.</p>
+<h3 id="jms-acknowledge-modes-and-sqs-implementations">JMS Acknowledge Modes and SQS Implementations</h3>
+<p>These acknowledge modes come from the original JMS spec and client libraries (SQS JMS library, in this case) are responsible to implement them. Let&rsquo;s have a look at our options and implementations of it.</p>
+<p>There are 3 acknowledge modes in the <a href="https://github.com/javaee/jms-spec/blob/master/jms1.0.1a/src/share/javax/jms/Session.java#L116">JMS spec</a>: <code>AUTO_ACKNOWLEDGE</code>, <code>CLIENT_ACKNOWLEDGE</code>, <code>DUPS_OK_ACKNOWLEDGE</code></p>
+<p>And there&rsquo;s 1 acknowledge mode SQS JMS library provides: <a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/SQSSession.java#L112"><code>UNORDERED_ACKNOWLEDGE</code></a></p>
+<p>To find out their SQS implementations, we need to look at <a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/SQSConnection.java#L181">SQSConnection</a> class:</p>
+<script type="application/javascript" src="https://gist.github.com/sedooe/edaa8e3938e0e3fda2c4a83d35817e4d.js"></script>
+
+<p>Let&rsquo;s see these implementations one by one:</p>
+<ol>
+<li><a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/acknowledge/AutoAcknowledger.java">AutoAcknowledger</a>: The implementation of <code>AUTO_ACKNOWLEDGE</code>.</li>
+</ol>
+<script type="application/javascript" src="https://gist.github.com/sedooe/e36564813b0fc9240b92d369a50d1556.js"></script>
+
+<p>As explained both in AutoAcknowledger and <code>AUTO_ACKNOWLEDGE</code> JavaDoc, this acknowledges the message (deletes it from the queue) when it first received it. So, even though your processing ends up with an exception, you&rsquo;ll never get that message again from SQS. If you failed the process of this message, goodbye, it&rsquo;s lost. Thus, if you can&rsquo;t tolerate losing messages and want to leverage SQS' visibility timeout, do not use this acknowledge mode.</p>
+<ol start="2">
+<li><a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/acknowledge/RangedAcknowledger.java">RangedAcknowledger</a>: The implementation of <code>CLIENT_ACKNOWLEDGE</code> and <code>DUPS_OK_ACKNOWLEDGE</code>.</li>
+</ol>
+<script type="application/javascript" src="https://gist.github.com/sedooe/89ea89eb45994a069c2b850289d0e3c5.js"></script>
+
+<p>In this implementation, <code>acknowledge</code> deletes all messages within the <code>unAckMessages</code> queue it holds. Invocation of this <code>acknowledge</code> is done by Spring JMS from its <code>commitIfNecessary</code> method, if message listener doesn&rsquo;t throw any exception. You need to be careful when using this acknowledge mode. If you use the solution above to not change visibility timeout to 0, you&rsquo;ll end up removing <code>rollbackOnExceptionIfNecessary</code> implementation. Doing that may cause failed messages to be acknowledged. So, if you want to use fixed visibility timeout on the SQS queue you set and you can not tolerate losing messages, you should not use <code>CLIENT_ACKNOWLEDGE</code> mode either.</p>
+<ol start="3">
+<li><a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/acknowledge/UnorderedAcknowledger.java">UnorderedAcknowledger</a>: The implementation of <code>UNORDERED_ACKNOWLEDGE</code>.</li>
+</ol>
+<script type="application/javascript" src="https://gist.github.com/sedooe/4647dfb6e9e5370a3fbfad63fd9df751.js"></script>
+
+<p>As you see, this also deletes a single message just like <code>AutoAcknowledger</code>, except <code>acknowledge</code> method is not called by Spring JMS or SQS JMS libraries. If you&rsquo;re using this mode, you&rsquo;re the one who is responsible for calling the <code>acknowledge</code>.</p>
+<p>All of these acknowledge modes do things very differently and you should choose the one that works for your use case. There is a number of things to consider, some of them:</p>
+<ul>
+<li>Can you tolerate losing messages?</li>
+<li>Is your message processing idempotent? Does the order of messages important for you?</li>
+<li>What&rsquo;s the volume of messages you consume? Since SQS charges you per call, you may end up with 10x more costs if you don&rsquo;t use <code>CLIENT_ACKNOWLEDGE</code>. (hint: take a look at <a href="https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sqs/buffered/AmazonSQSBufferedAsyncClient.html">AmazonSQSBufferedAsyncClient</a>)</li>
+<li>Is your message processing asynchronous? If it is, you should be in charge of the calling <code>acknowledge</code> method, so you better not use anything other than <code>UNORDERED_ACKNOWLEDGE</code>.</li>
+</ul>
+<p>My suggestion is, if you want to benefit from visibility timeout and dead-letter queues, go with <code>UNORDERED_ACKNOWLEDGE</code> by making sure that you <code>acknowledge</code> the message manually.</p>
+<p>Nevertheless, as with anything in software development, there&rsquo;s no silver bullet in this case too. You should know your tools/libraries well and be aware of the trade-offs you face.</p>
+
+
+
+    
+
+    
+
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+
+(function() {
+    
+    
+    if (window.location.hostname == "localhost")
+        return;
+
+    var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+    var disqus_shortname = 'sedooe';
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+})();
+</script>
+<noscript>Please enable JavaScript to view the comments powered by <a href="http://disqus.com/?ref_noscript">Disqus.</a></noscript>
+
+</div>
+</div>
+
+</body>
+</html>

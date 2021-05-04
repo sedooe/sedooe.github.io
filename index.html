@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
-	<meta name="generator" content="Hugo 0.52" />
+	<meta name="generator" content="Hugo 0.83.1" />
   <link href="http://gmpg.org/xfn/11" rel="profile">
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
 
@@ -19,7 +19,7 @@
 
   <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="sedooe"/>
-<meta name="twitter:description" content="mostly java stuff"/>
+<meta name="twitter:description" content="jvm, spring, kubernetes"/>
 
   
 <script type="application/javascript">
@@ -81,7 +81,7 @@ if (!doNotTrack) {
     <div class="sidebar-about">
       <h1 class="brand"><a href="https://sedooe.github.io">sedooe</a></h1>
       <p class="lead">
-       mostly java stuff 
+       jvm, spring, kubernetes 
       </p>
     </div>
 
@@ -111,6 +111,70 @@ if (!doNotTrack) {
   
   <div class="post">
     <h1 class="post-title">
+      <a href="https://sedooe.github.io/2021/05/using-spring-jms-with-amazon-sqs/">
+        Using Spring JMS with Amazon SQS
+      </a>
+    </h1>
+
+    <span class="post-date">May 4, 2021</span>
+
+    
+
+
+    <p>In this blog post, I&rsquo;ll try to explain what you need to be careful about when using Spring JMS for consuming messages from <a href="https://aws.amazon.com/sqs/">Amazon SQS</a>.</p>
+<p>Even though there are many blog posts about this topic, I noticed that most of them don&rsquo;t even mention how to handle failures properly.</p>
+<p>I&rsquo;m not sure if it&rsquo;s because blog posts are poor-quality, or the consumers of them are just very lazy that they&rsquo;re trying to build production systems based on random blog posts with zero questionings. Anyway&hellip;</p>
+<p>Alright. So, you have an SQS queue that you want to consume and process messages. This message processing might involve some external systems so you should be prepared for failures during this message processing. SQS provides some nice features for you to handle these failures.</p>
+<p><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html"><strong>Visibility Timeout</strong></a>: SQS has out-of-the-box support for retries with fixed delays. If you don&rsquo;t delete the message you consumed within this period, that message will be visible again to the consumers. Hence, retry mechanism with a fixed delay. You can configure the maximum number of retries with <a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SetQueueAttributes.html">Redrive Policy</a>.<br>
+What happens if you still can&rsquo;t process message successfully and can&rsquo;t delete the message from the queue after all these retries?</p>
+<p><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html"><strong>Dead-letter Queues</strong></a>: The messages that you couldn&rsquo;t process within <code>(maxReceiveCount * visibilityTimeout)</code> seconds, will be sent to its dead-letter queue automatically by SQS, so that you can later on examine these messages you could not process and try to find out the root cause for the failures.</p>
+<p>&ldquo;Great!&rdquo; you think, SQS already does a lot of stuff for handling failures, you just need to integrate Spring JMS with Amazon SQS, and then you can start writing message processing logic.</p>
+<p>So you found <a href="https://aws.amazon.com/blogs/developer/using-amazon-sqs-with-spring-boot-and-spring-jms/">this</a> blog post for this integration and realize that SQS even has its own <a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib">JMS library</a> which you can integrate with Spring JMS, nice!</p>
+<p>When you apply the very same config in the blog post above, if you have an error and your JMS Listener throws an exception during message processing, you&rsquo;ll see that visibility timeout is not respected at all, and retry kicks in immediately. In <a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/issues/75">this GitHub issue</a>, you can find why that&rsquo;s happening.</p>
+<p>Basically, when you use <code>CLIENT_ACKNOWLEDGE</code> mode, if your listener method throws an exception, SQS JMS library changes that message&rsquo;s visibility timeout to 0, so that message becomes visible immediately. This is not what we want, we all know that immediate retries often trouble rather than a cure for any problem.</p>
+<p>It&rsquo;s clear that we need to choose another acknowledge mode.</p>
+<h3 id="jms-acknowledge-modes-and-sqs-implementations">JMS Acknowledge Modes and SQS Implementations</h3>
+<p>These acknowledge modes come from the original JMS spec and client libraries (SQS JMS library, in this case) are responsible to implement them. Let&rsquo;s have a look at our options and implementations of it.</p>
+<p>There are 3 acknowledge modes in the <a href="https://github.com/javaee/jms-spec/blob/master/jms1.0.1a/src/share/javax/jms/Session.java#L116">JMS spec</a>: <code>AUTO_ACKNOWLEDGE</code>, <code>CLIENT_ACKNOWLEDGE</code>, <code>DUPS_OK_ACKNOWLEDGE</code></p>
+<p>And there&rsquo;s 1 acknowledge mode SQS JMS library provides: <a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/SQSSession.java#L112"><code>UNORDERED_ACKNOWLEDGE</code></a></p>
+<p>To find out their SQS implementations, we need to look at <a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/SQSConnection.java#L181">SQSConnection</a> class:</p>
+<script type="application/javascript" src="https://gist.github.com/sedooe/edaa8e3938e0e3fda2c4a83d35817e4d.js"></script>
+
+<p>Let&rsquo;s see these implementations one by one:</p>
+<ol>
+<li><a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/acknowledge/AutoAcknowledger.java">AutoAcknowledger</a>: The implementation of <code>AUTO_ACKNOWLEDGE</code>.</li>
+</ol>
+<script type="application/javascript" src="https://gist.github.com/sedooe/e36564813b0fc9240b92d369a50d1556.js"></script>
+
+<p>As explained both in AutoAcknowledger and <code>AUTO_ACKNOWLEDGE</code> JavaDoc, this acknowledges the message (deletes it from the queue) when it first received it. So, even though your processing ends up with an exception, you&rsquo;ll never get that message again from SQS. If you failed the process of this message, goodbye, it&rsquo;s lost. Thus, if you can&rsquo;t tolerate losing messages and want to leverage SQS' visibility timeout, do not use this acknowledge mode.</p>
+<ol start="2">
+<li><a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/acknowledge/RangedAcknowledger.java">RangedAcknowledger</a>: The implementation of <code>CLIENT_ACKNOWLEDGE</code> and <code>DUPS_OK_ACKNOWLEDGE</code>.</li>
+</ol>
+<script type="application/javascript" src="https://gist.github.com/sedooe/89ea89eb45994a069c2b850289d0e3c5.js"></script>
+
+<p>In this implementation, <code>acknowledge</code> deletes all messages within the <code>unAckMessages</code> queue it holds. Invocation of this <code>acknowledge</code> is done by Spring JMS from its <code>commitIfNecessary</code> method, if message listener doesn&rsquo;t throw any exception. You need to be careful when using this acknowledge mode. If you use the solution above to not change visibility timeout to 0, you&rsquo;ll end up removing <code>rollbackOnExceptionIfNecessary</code> implementation. Doing that may cause failed messages to be acknowledged. So, if you want to use fixed visibility timeout on the SQS queue you set and you can not tolerate losing messages, you should not use <code>CLIENT_ACKNOWLEDGE</code> mode either.</p>
+<ol start="3">
+<li><a href="https://github.com/awslabs/amazon-sqs-java-messaging-lib/blob/master/src/main/java/com/amazon/sqs/javamessaging/acknowledge/UnorderedAcknowledger.java">UnorderedAcknowledger</a>: The implementation of <code>UNORDERED_ACKNOWLEDGE</code>.</li>
+</ol>
+<script type="application/javascript" src="https://gist.github.com/sedooe/4647dfb6e9e5370a3fbfad63fd9df751.js"></script>
+
+<p>As you see, this also deletes a single message just like <code>AutoAcknowledger</code>, except <code>acknowledge</code> method is not called by Spring JMS or SQS JMS libraries. If you&rsquo;re using this mode, you&rsquo;re the one who is responsible for calling the <code>acknowledge</code>.</p>
+<p>All of these acknowledge modes do things very differently and you should choose the one that works for your use case. There is a number of things to consider, some of them:</p>
+<ul>
+<li>Can you tolerate losing messages?</li>
+<li>Is your message processing idempotent? Does the order of messages important for you?</li>
+<li>What&rsquo;s the volume of messages you consume? Since SQS charges you per call, you may end up with 10x more costs if you don&rsquo;t use <code>CLIENT_ACKNOWLEDGE</code>. (hint: take a look at <a href="https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sqs/buffered/AmazonSQSBufferedAsyncClient.html">AmazonSQSBufferedAsyncClient</a>)</li>
+<li>Is your message processing asynchronous? If it is, you should be in charge of the calling <code>acknowledge</code> method, so you better not use anything other than <code>UNORDERED_ACKNOWLEDGE</code>.</li>
+</ul>
+<p>My suggestion is, if you want to benefit from visibility timeout and dead-letter queues, go with <code>UNORDERED_ACKNOWLEDGE</code> by making sure that you <code>acknowledge</code> the message manually.</p>
+<p>Nevertheless, as with anything in software development, there&rsquo;s no silver bullet in this case too. You should know your tools/libraries well and be aware of the trade-offs you face.</p>
+
+  </div>
+  
+  
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="https://sedooe.github.io/2017/08/tracing-requests-and-responses-with-spring-boot-actuator/">
         Tracing Requests &amp; Responses with Spring Boot Actuator
       </a>
@@ -122,9 +186,7 @@ if (!doNotTrack) {
 
 
     <p>Spring Boot Actuator is a sub-project that provides endpoints allow you to monitor and interact with your application. You can take a look at <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-endpoints.html#production-ready-endpoints">complete list of endpoints</a> but we will focus on <code>trace</code> and its customization in this post.</p>
-
 <p>By default, <code>trace</code> endpoint is enabled for all HTTP requests and shows last 100 of them with 5 default properties:</p>
-
 <ul>
 <li>Request Headers</li>
 <li>Response Headers</li>
@@ -132,40 +194,27 @@ if (!doNotTrack) {
 <li>Errors</li>
 <li>Time Taken</li>
 </ul>
-
 <p>So, when you hit <code>/trace</code>, the typical response will be like:</p>
-
-<script src="https://gist.github.com/sedooe/6ed35760c8a1388a39bc95ac1cbc2f88.js"></script>
+<script type="application/javascript" src="https://gist.github.com/sedooe/6ed35760c8a1388a39bc95ac1cbc2f88.js"></script>
 
 <p>The question is: how can we customize these properties? Is there any way to exclude some of them or include even more properties? The answer is YES.</p>
-
 <p><a href="https://github.com/spring-projects/spring-boot/blob/dd08c31b9a5c21da31ecc4e9408e33445dd2ea73/spring-boot-actuator/src/main/java/org/springframework/boot/actuate/trace/TraceProperties.java#L67">Here</a>, you can see all available properties. Sometimes, the best documentation is the source code :).</p>
-
 <p>In your configuration file you can specify the properties you want to trace:</p>
-
 <p><code>management.trace.include = remote_address, parameters</code></p>
-
 <blockquote>
 <p>Note that this will override default properties. If you want to keep them, you have to specify them along with additional properties you want.</p>
 </blockquote>
-
 <p>In the introduction part we said that it&rsquo;s enabled for all HTTP requests. It really is. If you played with it, probably you saw that requests made to <code>/trace</code> also traced. Let&rsquo;s say you don&rsquo;t want some endpoints to be traced such as <code>/admin/**</code>, <code>/trace</code> and endpoints provide static files like <code>/css/**</code> and <code>/js/**</code>.</p>
-
 <p>To be able to prevent those endpoints to be traced, we need to extend <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/WebRequestTraceFilter.html"><code>WebRequestTraceFilter</code></a> and override its <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/filter/OncePerRequestFilter.html#shouldNotFilter-javax.servlet.http.HttpServletRequest-"><code>shouldNotFilter</code></a> method which inherited from <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/filter/OncePerRequestFilter.html"><code>OncePerRequestFilter</code></a>.</p>
-
-<script src="https://gist.github.com/sedooe/f3e4ec1dd49bb316a5a3f94425d267f7.js"></script>
+<script type="application/javascript" src="https://gist.github.com/sedooe/f3e4ec1dd49bb316a5a3f94425d267f7.js"></script>
 
 <p><code>shouldNotFilter</code>&rsquo;s default implementation was always returning false. Now with this implementation, it returns <strong>true</strong> for the endpoints we don&rsquo;t want to trace.
 By annotating this class with <code>@Component</code>, we tell Spring to register it as a bean instead inherited <code>WebRequestTraceFilter</code>. No more configuration needed for this to work.</p>
-
 <p>It&rsquo;s not over yet, we need more customization!</p>
-
 <p>In the introduction part we also said that, <code>trace</code> endpoint shows last 100 requests by default. Unfortunately, there is no way to change it from configuration file directly but still it&rsquo;s a piece of cake.</p>
-
-<script src="https://gist.github.com/sedooe/0310f74811c6d811382c27d4d76fc2b1.js"></script>
+<script type="application/javascript" src="https://gist.github.com/sedooe/0310f74811c6d811382c27d4d76fc2b1.js"></script>
 
 <p>By default, <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/InMemoryTraceRepository.html"><code>InMemoryTraceRepository</code></a> is used as an implementation of <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/TraceRepository.html"><code>TraceRepository</code></a>. By extending it, we can expand the capacity, log requests explicitly or even persist them. It&rsquo;s up to you.</p>
-
 <p><a href="https://github.com/sedooe/blog-projects/tree/master/spring-boot-actuator-customization">Here</a> is the source code of sample application.</p>
 
   </div>
@@ -185,20 +234,15 @@ By annotating this class with <code>@Component</code>, we tell Spring to registe
 
 
     <p>Actually, Logback does not offer a direct way to modify logs but there is a workaround we can achieve our goal by using filter even though it looks like a bit hacky.</p>
-
 <p>Let&rsquo;s say that you logged some id no of some user hundreds of times, it scattered through all over the application and now you have a new requirement that says you have to encrypt this id number. Of course you&rsquo;re smart enough to write an interceptor for this task instead of go find and change necessary logs manually. And also with this way, we can be sure that we&rsquo;ll never log that id number accidentally.</p>
-
 <p>For this case, we&rsquo;re gonna extend <a href="https://logback.qos.ch/apidocs/ch/qos/logback/classic/turbo/TurboFilter.html"><code>TurboFilter</code></a> and override its <code>decide</code> method.</p>
-
-<script src="https://gist.github.com/sedooe/a1658c2fb7ae89084b2f21457321f0e2.js"></script>
+<script type="application/javascript" src="https://gist.github.com/sedooe/a1658c2fb7ae89084b2f21457321f0e2.js"></script>
 
 <p>If the log matches our criteria and we want to change it, we deny it by returning <code>FilterReply.DENY</code> and log again with the changed object.</p>
-
 <p>Here, I used <code>info</code> as log level for the sake of simplicity but if you don&rsquo;t want to change log level, you can easily check which <code>level</code> coming log has and use that level.</p>
-
 <p>It&rsquo;s that easy once you deal with recursion and not forget to declare your custom filter in configuration file properly.</p>
+<script type="application/javascript" src="https://gist.github.com/sedooe/97f93f124dae080c9d958d1689c1697e.js"></script>
 
-<script src="https://gist.github.com/sedooe/97f93f124dae080c9d958d1689c1697e.js"></script>
 
   </div>
   
@@ -217,21 +261,14 @@ By annotating this class with <code>@Component</code>, we tell Spring to registe
 
 
     <p>Let&rsquo;s say that you have an API which stands on <strong>xdomain.com</strong> and you have a Javascript application that consuming this API from <strong>ydomain.com</strong>. For ydomain.com to consume the API, xdomain.com has to send <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS">CORS</a> header  <code>Access-Control-Allow-Origin</code> in its response.</p>
-
 <p>The simplest way to do this in Spring is annotate whole controller or just handler method with the annotation <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/CrossOrigin.html"><code>CrossOrigin</code></a>.</p>
-
 <p>It&rsquo;s all what you need when your API does not require authentication.</p>
-
 <p>On the other hand, when your API requires authentication, things get a bit complicated. For example, let&rsquo;s say that you authenticate your API with HTTP Basic Authentication. So, consumers of this API must send an <strong>Authorization</strong> header which contains user credentials in their request. Since this is a <a href="http://stackoverflow.com/a/10636765/3099704">non-simple request</a>, <strong>OPTIONS</strong> request will be send firstly. The thing is that, even if you send Authorization header with correct credentials in your request, you will face something like below:</p>
-
-<p><img src="https://sedooe.github.io/img/options_response.png" alt="response" /></p>
-
+<p><img src="https://sedooe.github.io/img/options_response.png" alt="response"></p>
 <p>The reason of this is, according to CORS spec, it excludes your Authorization header. Hence, you should permit OPTIONS requests in your security configuration class explicitly.</p>
-
-<script src="https://gist.github.com/sedooe/5c5735ca41a96a6d7be7a73d783334ba.js"></script>
+<script type="application/javascript" src="https://gist.github.com/sedooe/5c5735ca41a96a6d7be7a73d783334ba.js"></script>
 
 <p>Last of all, I suggest you to read these two posts:</p>
-
 <p><a href="http://stackoverflow.com/a/15734032/3099704">http://stackoverflow.com/a/15734032/3099704</a>
 <a href="https://code.google.com/archive/p/twitter-api/issues/2273">https://code.google.com/archive/p/twitter-api/issues/2273</a></p>
 
@@ -252,71 +289,60 @@ By annotating this class with <code>@Component</code>, we tell Spring to registe
 
 
     <p>In this post, I will try to demonstrate how easily we can implement an authentication mechanism for REST services using Spring Security and Spring Session with the help of Redis.</p>
-
 <p>The authentication scheme that we will use:</p>
-
 <ol>
 <li>Client requests an authenticated URL with its credentials. (first request to the server)</li>
-<li>Server gives some unique string besides the normal response. </br>(unique string is session id in our case)</li>
+<li>Server gives some unique string besides the normal response. <!-- raw HTML omitted -->(unique string is session id in our case)</li>
 <li>Client has to send this string with every request using an HTTP header.</li>
 <li>Server recognizes this unique string and logs client in.</li>
 </ol>
-
 <p><strong>Let&rsquo;s start implementing the scheme above.</strong></p>
-
 <blockquote>
 <p>For this application to work, you must install Redis 2.8+ on localhost and run it with the default port (6379).</p>
 </blockquote>
-
 <p>We will create very simple Spring Boot application which you can get source code and dependencies <a href="https://github.com/sedooe/blog-projects/tree/master/rest-authentication-example">here</a>.</p>
-
 <p>Our security configuration looks like:
-<script src="https://gist.github.com/sedooe/f143f6b615bfc1aeb23954ef514ec244.js"></script></p>
-
+<script type="application/javascript" src="https://gist.github.com/sedooe/f143f6b615bfc1aeb23954ef514ec244.js"></script>
+</p>
 <p><code>configureGlobal</code> method is pretty straightforward, we just create a user with username <em>sedooe</em> and password <em>password</em>.</p>
-
 <p><code>configure</code> method is also straightforward but I want to emphasize two things here.</p>
-
 <ol>
-<li><p>We are using HTTP Basic Authentication since it is simplest way to deal with authentication. As you probably know, Basic Authentication is just a standard HTTP header with the username:password encoded in base64: </br>
-<code>Authorization: Basic c2Vkb29lOnBhc3N3b3Jk</code> </br>
-Keep in mind that encoding is not encrypting. Therefore, you must use HTTPS instead of HTTP to make sure that user credentials are sent securely.</p></li>
-
-<li><p><code>NullRequestCache</code> prevents creation of session when user is not authenticated so that we have only authenticated users&rsquo; session ids stored in Redis.</p></li>
+<li>
+<p>We are using HTTP Basic Authentication since it is simplest way to deal with authentication. As you probably know, Basic Authentication is just a standard HTTP header with the username:password encoded in base64: <!-- raw HTML omitted -->
+<code>Authorization: Basic c2Vkb29lOnBhc3N3b3Jk</code> <!-- raw HTML omitted -->
+Keep in mind that encoding is not encrypting. Therefore, you must use HTTPS instead of HTTP to make sure that user credentials are sent securely.</p>
+</li>
+<li>
+<p><code>NullRequestCache</code> prevents creation of session when user is not authenticated so that we have only authenticated users' session ids stored in Redis.</p>
+</li>
 </ol>
-
-<p>In <code>httpSessionStrategy</code> method, Spring Session comes into play. </br>
+<p>In <code>httpSessionStrategy</code> method, Spring Session comes into play. <!-- raw HTML omitted -->
 Thanks to <code>HeaderHttpSessionStrategy</code>, when a session is created, the HTTP response will have a response header of the specified name and the value of the session id. Default header name is <strong>x-auth-token</strong> and we will use it.</p>
-
 <p>Here is our simple controller:
-<script src="https://gist.github.com/sedooe/0f1536cfccb3024b1090fb73b895f718.js"></script></p>
-
+<script type="application/javascript" src="https://gist.github.com/sedooe/0f1536cfccb3024b1090fb73b895f718.js"></script>
+</p>
 <p>There is nothing to mention about this controller specifically so let&rsquo;s start trying things out.</p>
-
 <p><code>$ curl -v http://localhost:8080/api/resource</code></p>
-
-<p>Yeah, authentication is required to access this resource. So try:</br>
+<p>Yeah, authentication is required to access this resource. So try:<!-- raw HTML omitted -->
 <code>$ curl -v http://localhost:8080/api/resource -u sedooe:password</code></p>
-
-<p>Now you are authenticated and you have access to the resource. Take a look at response headers and you will see that:</br>
+<p>Now you are authenticated and you have access to the resource. Take a look at response headers and you will see that:<!-- raw HTML omitted -->
 <code>x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040</code></p>
-
-<p>For further requests, we can use <strong>x-auth-token</strong> instead of username and password.</br>
+<p>For further requests, we can use <strong>x-auth-token</strong> instead of username and password.<!-- raw HTML omitted -->
 <code>$ curl -v http://localhost:8080/api/resource -H &quot;x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040&quot;</code></p>
-
-<p>If you want to see all stored tokens:</br>
+<p>If you want to see all stored tokens:<!-- raw HTML omitted -->
 <code>$ redis-cli keys '*'</code></p>
-
-<p>To invalidate the session and delete it from Redis:</br>
+<p>To invalidate the session and delete it from Redis:<!-- raw HTML omitted -->
 <code>$ curl -v http://localhost:8080/api/logout -H &quot;x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040&quot;</code></p>
-
 <blockquote>
 <p><strong>Note:</strong></p>
-
+</blockquote>
+<blockquote>
 <p>You may wonder how our application connected to Redis without writing any code for that.</p>
-
+</blockquote>
+<blockquote>
 <p>Since we use Spring Boot 1.3.3 in this project and Spring Session and Spring Data Redis are both on the classpath, Spring Boot will auto-configure Spring Session to connect to Redis.</p>
-
+</blockquote>
+<blockquote>
 <p>If you use earlier Spring Boot versions than 1.3.1 or don&rsquo;t use it at all, you should add <a href="http://docs.spring.io/spring-session/docs/current/api/org/springframework/session/data/redis/config/annotation/web/http/EnableRedisHttpSession.html"><code>@EnableRedisHttpSession</code></a> to your configuration class.</p>
 </blockquote>
 
