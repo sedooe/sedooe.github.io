@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
 <head>
-	<meta name="generator" content="Hugo 0.83.1" />
+	<meta name="generator" content="Hugo 0.52" />
   <link href="http://gmpg.org/xfn/11" rel="profile">
   <meta http-equiv="content-type" content="text/html; charset=utf-8">
 
@@ -108,6 +108,219 @@ if (!doNotTrack) {
 <div class="posts">
 
       
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://sedooe.github.io/2017/08/tracing-requests-and-responses-with-spring-boot-actuator/">
+        Tracing Requests &amp; Responses with Spring Boot Actuator
+      </a>
+    </h1>
+
+    <span class="post-date">Aug 19, 2017</span>
+
+    
+
+
+    <p>Spring Boot Actuator is a sub-project that provides endpoints allow you to monitor and interact with your application. You can take a look at <a href="https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-endpoints.html#production-ready-endpoints">complete list of endpoints</a> but we will focus on <code>trace</code> and its customization in this post.</p>
+
+<p>By default, <code>trace</code> endpoint is enabled for all HTTP requests and shows last 100 of them with 5 default properties:</p>
+
+<ul>
+<li>Request Headers</li>
+<li>Response Headers</li>
+<li>Cookies</li>
+<li>Errors</li>
+<li>Time Taken</li>
+</ul>
+
+<p>So, when you hit <code>/trace</code>, the typical response will be like:</p>
+
+<script src="https://gist.github.com/sedooe/6ed35760c8a1388a39bc95ac1cbc2f88.js"></script>
+
+<p>The question is: how can we customize these properties? Is there any way to exclude some of them or include even more properties? The answer is YES.</p>
+
+<p><a href="https://github.com/spring-projects/spring-boot/blob/dd08c31b9a5c21da31ecc4e9408e33445dd2ea73/spring-boot-actuator/src/main/java/org/springframework/boot/actuate/trace/TraceProperties.java#L67">Here</a>, you can see all available properties. Sometimes, the best documentation is the source code :).</p>
+
+<p>In your configuration file you can specify the properties you want to trace:</p>
+
+<p><code>management.trace.include = remote_address, parameters</code></p>
+
+<blockquote>
+<p>Note that this will override default properties. If you want to keep them, you have to specify them along with additional properties you want.</p>
+</blockquote>
+
+<p>In the introduction part we said that it&rsquo;s enabled for all HTTP requests. It really is. If you played with it, probably you saw that requests made to <code>/trace</code> also traced. Let&rsquo;s say you don&rsquo;t want some endpoints to be traced such as <code>/admin/**</code>, <code>/trace</code> and endpoints provide static files like <code>/css/**</code> and <code>/js/**</code>.</p>
+
+<p>To be able to prevent those endpoints to be traced, we need to extend <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/WebRequestTraceFilter.html"><code>WebRequestTraceFilter</code></a> and override its <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/filter/OncePerRequestFilter.html#shouldNotFilter-javax.servlet.http.HttpServletRequest-"><code>shouldNotFilter</code></a> method which inherited from <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/filter/OncePerRequestFilter.html"><code>OncePerRequestFilter</code></a>.</p>
+
+<script src="https://gist.github.com/sedooe/f3e4ec1dd49bb316a5a3f94425d267f7.js"></script>
+
+<p><code>shouldNotFilter</code>&rsquo;s default implementation was always returning false. Now with this implementation, it returns <strong>true</strong> for the endpoints we don&rsquo;t want to trace.
+By annotating this class with <code>@Component</code>, we tell Spring to register it as a bean instead inherited <code>WebRequestTraceFilter</code>. No more configuration needed for this to work.</p>
+
+<p>It&rsquo;s not over yet, we need more customization!</p>
+
+<p>In the introduction part we also said that, <code>trace</code> endpoint shows last 100 requests by default. Unfortunately, there is no way to change it from configuration file directly but still it&rsquo;s a piece of cake.</p>
+
+<script src="https://gist.github.com/sedooe/0310f74811c6d811382c27d4d76fc2b1.js"></script>
+
+<p>By default, <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/InMemoryTraceRepository.html"><code>InMemoryTraceRepository</code></a> is used as an implementation of <a href="http://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/actuate/trace/TraceRepository.html"><code>TraceRepository</code></a>. By extending it, we can expand the capacity, log requests explicitly or even persist them. It&rsquo;s up to you.</p>
+
+<p><a href="https://github.com/sedooe/blog-projects/tree/master/spring-boot-actuator-customization">Here</a> is the source code of sample application.</p>
+
+  </div>
+  
+  
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://sedooe.github.io/2017/04/intercepting-and-modifying-logs-in-logback/">
+        Intercepting and modifying logs in Logback
+      </a>
+    </h1>
+
+    <span class="post-date">Apr 17, 2017</span>
+
+    
+
+
+    <p>Actually, Logback does not offer a direct way to modify logs but there is a workaround we can achieve our goal by using filter even though it looks like a bit hacky.</p>
+
+<p>Let&rsquo;s say that you logged some id no of some user hundreds of times, it scattered through all over the application and now you have a new requirement that says you have to encrypt this id number. Of course you&rsquo;re smart enough to write an interceptor for this task instead of go find and change necessary logs manually. And also with this way, we can be sure that we&rsquo;ll never log that id number accidentally.</p>
+
+<p>For this case, we&rsquo;re gonna extend <a href="https://logback.qos.ch/apidocs/ch/qos/logback/classic/turbo/TurboFilter.html"><code>TurboFilter</code></a> and override its <code>decide</code> method.</p>
+
+<script src="https://gist.github.com/sedooe/a1658c2fb7ae89084b2f21457321f0e2.js"></script>
+
+<p>If the log matches our criteria and we want to change it, we deny it by returning <code>FilterReply.DENY</code> and log again with the changed object.</p>
+
+<p>Here, I used <code>info</code> as log level for the sake of simplicity but if you don&rsquo;t want to change log level, you can easily check which <code>level</code> coming log has and use that level.</p>
+
+<p>It&rsquo;s that easy once you deal with recursion and not forget to declare your custom filter in configuration file properly.</p>
+
+<script src="https://gist.github.com/sedooe/97f93f124dae080c9d958d1689c1697e.js"></script>
+
+  </div>
+  
+  
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://sedooe.github.io/2016/08/cors-and-authentication/">
+        CORS and Authentication
+      </a>
+    </h1>
+
+    <span class="post-date">Aug 28, 2016</span>
+
+    
+
+
+    <p>Let&rsquo;s say that you have an API which stands on <strong>xdomain.com</strong> and you have a Javascript application that consuming this API from <strong>ydomain.com</strong>. For ydomain.com to consume the API, xdomain.com has to send <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS">CORS</a> header  <code>Access-Control-Allow-Origin</code> in its response.</p>
+
+<p>The simplest way to do this in Spring is annotate whole controller or just handler method with the annotation <a href="http://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/CrossOrigin.html"><code>CrossOrigin</code></a>.</p>
+
+<p>It&rsquo;s all what you need when your API does not require authentication.</p>
+
+<p>On the other hand, when your API requires authentication, things get a bit complicated. For example, let&rsquo;s say that you authenticate your API with HTTP Basic Authentication. So, consumers of this API must send an <strong>Authorization</strong> header which contains user credentials in their request. Since this is a <a href="http://stackoverflow.com/a/10636765/3099704">non-simple request</a>, <strong>OPTIONS</strong> request will be send firstly. The thing is that, even if you send Authorization header with correct credentials in your request, you will face something like below:</p>
+
+<p><img src="https://sedooe.github.io/img/options_response.png" alt="response" /></p>
+
+<p>The reason of this is, according to CORS spec, it excludes your Authorization header. Hence, you should permit OPTIONS requests in your security configuration class explicitly.</p>
+
+<script src="https://gist.github.com/sedooe/5c5735ca41a96a6d7be7a73d783334ba.js"></script>
+
+<p>Last of all, I suggest you to read these two posts:</p>
+
+<p><a href="http://stackoverflow.com/a/15734032/3099704">http://stackoverflow.com/a/15734032/3099704</a>
+<a href="https://code.google.com/archive/p/twitter-api/issues/2273">https://code.google.com/archive/p/twitter-api/issues/2273</a></p>
+
+  </div>
+  
+  
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://sedooe.github.io/2016/04/rest-authentication-using-spring-security-and-spring-session/">
+        REST Authentication using Spring Security &amp; Spring Session
+      </a>
+    </h1>
+
+    <span class="post-date">Apr 16, 2016</span>
+
+    
+
+
+    <p>In this post, I will try to demonstrate how easily we can implement an authentication mechanism for REST services using Spring Security and Spring Session with the help of Redis.</p>
+
+<p>The authentication scheme that we will use:</p>
+
+<ol>
+<li>Client requests an authenticated URL with its credentials. (first request to the server)</li>
+<li>Server gives some unique string besides the normal response. </br>(unique string is session id in our case)</li>
+<li>Client has to send this string with every request using an HTTP header.</li>
+<li>Server recognizes this unique string and logs client in.</li>
+</ol>
+
+<p><strong>Let&rsquo;s start implementing the scheme above.</strong></p>
+
+<blockquote>
+<p>For this application to work, you must install Redis 2.8+ on localhost and run it with the default port (6379).</p>
+</blockquote>
+
+<p>We will create very simple Spring Boot application which you can get source code and dependencies <a href="https://github.com/sedooe/blog-projects/tree/master/rest-authentication-example">here</a>.</p>
+
+<p>Our security configuration looks like:
+<script src="https://gist.github.com/sedooe/f143f6b615bfc1aeb23954ef514ec244.js"></script></p>
+
+<p><code>configureGlobal</code> method is pretty straightforward, we just create a user with username <em>sedooe</em> and password <em>password</em>.</p>
+
+<p><code>configure</code> method is also straightforward but I want to emphasize two things here.</p>
+
+<ol>
+<li><p>We are using HTTP Basic Authentication since it is simplest way to deal with authentication. As you probably know, Basic Authentication is just a standard HTTP header with the username:password encoded in base64: </br>
+<code>Authorization: Basic c2Vkb29lOnBhc3N3b3Jk</code> </br>
+Keep in mind that encoding is not encrypting. Therefore, you must use HTTPS instead of HTTP to make sure that user credentials are sent securely.</p></li>
+
+<li><p><code>NullRequestCache</code> prevents creation of session when user is not authenticated so that we have only authenticated users&rsquo; session ids stored in Redis.</p></li>
+</ol>
+
+<p>In <code>httpSessionStrategy</code> method, Spring Session comes into play. </br>
+Thanks to <code>HeaderHttpSessionStrategy</code>, when a session is created, the HTTP response will have a response header of the specified name and the value of the session id. Default header name is <strong>x-auth-token</strong> and we will use it.</p>
+
+<p>Here is our simple controller:
+<script src="https://gist.github.com/sedooe/0f1536cfccb3024b1090fb73b895f718.js"></script></p>
+
+<p>There is nothing to mention about this controller specifically so let&rsquo;s start trying things out.</p>
+
+<p><code>$ curl -v http://localhost:8080/api/resource</code></p>
+
+<p>Yeah, authentication is required to access this resource. So try:</br>
+<code>$ curl -v http://localhost:8080/api/resource -u sedooe:password</code></p>
+
+<p>Now you are authenticated and you have access to the resource. Take a look at response headers and you will see that:</br>
+<code>x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040</code></p>
+
+<p>For further requests, we can use <strong>x-auth-token</strong> instead of username and password.</br>
+<code>$ curl -v http://localhost:8080/api/resource -H &quot;x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040&quot;</code></p>
+
+<p>If you want to see all stored tokens:</br>
+<code>$ redis-cli keys '*'</code></p>
+
+<p>To invalidate the session and delete it from Redis:</br>
+<code>$ curl -v http://localhost:8080/api/logout -H &quot;x-auth-token: 00661f53-8453-4daf-89f1-e748a3326040&quot;</code></p>
+
+<blockquote>
+<p><strong>Note:</strong></p>
+
+<p>You may wonder how our application connected to Redis without writing any code for that.</p>
+
+<p>Since we use Spring Boot 1.3.3 in this project and Spring Session and Spring Data Redis are both on the classpath, Spring Boot will auto-configure Spring Session to connect to Redis.</p>
+
+<p>If you use earlier Spring Boot versions than 1.3.1 or don&rsquo;t use it at all, you should add <a href="http://docs.spring.io/spring-session/docs/current/api/org/springframework/session/data/redis/config/annotation/web/http/EnableRedisHttpSession.html"><code>@EnableRedisHttpSession</code></a> to your configuration class.</p>
+</blockquote>
+
+  </div>
   
   
   
